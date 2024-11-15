@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://thymeLeaf.org">
+
+<head th:insert="~{usuario/template_user.html::head}"></head>
+
+<body>
+
+	<div th:insert="~{usuario/template_user.html::header}" th:if="${sesion == null}"></div>
+	<div th:insert="~{usuario/template_user.html::usuarioCabecera}" th:unless="${sesion == null}"></div>
+
+	<section><!--buscador--></section>
+
+	<main id="main"><!--contenido-->
+		<div class="container">
+			<header class="jumbotron my-4">
+				
+			</header>
+		</div>
+	</main>
+
+	<div th:insert="~{usuario/template_user.html::footer}"></div>
+
+	<a href="#" class="scroll-top d-flex align-items-center justify-content-center"><i
+			class="bi bi-arrow-up-short"></i></a>
+
+	<div id="preloader"></div>
+
+	<div th:insert="~{usuario/template_user.html::jsFiles}"></div>
+
+</body>
+
+</html>
