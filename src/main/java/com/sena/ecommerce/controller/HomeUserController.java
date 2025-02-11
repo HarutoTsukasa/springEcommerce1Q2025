@@ -138,7 +138,7 @@ public class HomeUserController {
 		return "usuario/carrito";
 	}
 
-	// metodo para redirigir al carito sin productos
+	// metodo para redirigir al carrito sin productos
 	@GetMapping("/getCart")
 	public String getCart(Model model) {
 		model.addAttribute("cart", detalles);
