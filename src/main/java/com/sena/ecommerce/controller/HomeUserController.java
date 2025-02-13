@@ -68,7 +68,7 @@ public class HomeUserController {
 
 	// metodo que carga el producto de usuario con el id
 	@GetMapping("productoHome/{id}")
-	public String productoHome(@PathVariable Integer id, Model model) {
+	public String productoHome(@PathVariable Integer id, Model model, HttpSession session) {
 		LOGGER.info("ID producto enviado como parametro {}", id);
 		// variable de clase producto
 		Producto p = new Producto();
@@ -78,12 +78,14 @@ public class HomeUserController {
 		p = op.get();
 		// enviar a la vista con el model los detalles del producto con el id
 		model.addAttribute("producto", p);
+		// variable de sesion
+		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "usuario/productoHome";
 	}
 
 	// metodo para enviar del boton de productohome al carrito
 	@PostMapping("/cart")
-	public String addCart(@RequestParam Integer id, @RequestParam Double cantidad, Model model) {
+	public String addCart(@RequestParam Integer id, @RequestParam Double cantidad, Model model, HttpSession session) {
 		DetalleOrden detaorden = new DetalleOrden();
 		Producto p = new Producto();
 		// variable que siempre que este en el metodo inicializa en cero despues de cada
@@ -117,12 +119,16 @@ public class HomeUserController {
 		orden.setTotal(sumaTotal);
 		model.addAttribute("cart", detalles);
 		model.addAttribute("orden", orden);
+		// variable de sesion
+		model.addAttribute("sesion", session.getAttribute("idUsuario"));
+		
 		return "usuario/carrito";
+
 	}
 
 	// METODO PARA QUITAR PRODUCTOS DEL CARRITO
 	@GetMapping("/delete/cart/{id}")
-	public String deleteProductoCart(@PathVariable Integer id, Model model) {
+	public String deleteProductoCart(@PathVariable Integer id, Model model, HttpSession session) {
 		// lista nueva de productos
 		List<DetalleOrden> ordenesNuevas = new ArrayList<DetalleOrden>();
 		// quitar objeto de la lista de detalleOrden
@@ -140,14 +146,18 @@ public class HomeUserController {
 		orden.setTotal(sumaTotal);
 		model.addAttribute("cart", detalles);
 		model.addAttribute("orden", orden);
+		// variable de sesion
+		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "usuario/carrito";
 	}
 
 	// metodo para redirigir al carrito sin productos
 	@GetMapping("/getCart")
-	public String getCart(Model model) {
+	public String getCart(Model model, HttpSession session) {
 		model.addAttribute("cart", detalles);
 		model.addAttribute("orden", orden);
+		// variable de sesion
+		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "/usuario/carrito";
 	}
 
@@ -158,6 +168,8 @@ public class HomeUserController {
 		model.addAttribute("cart", detalles);
 		model.addAttribute("orden", orden);
 		model.addAttribute("usuario", u);
+		// variable de sesion
+		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "usuario/resumenorden";
 	}
 
