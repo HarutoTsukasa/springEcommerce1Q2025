@@ -23,12 +23,12 @@ public class SpringBootSecurity {
 	}
 
 	// metodo para restringir vistas al usuario
-	@SuppressWarnings({ "removal" })
+	@SuppressWarnings({ "removal", "deprecation" })
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests().requestMatchers("/administrador/**").hasRole("ADMIN")
-				.requestMatchers("/productos/**").hasRole("ADMIN").and()
-				// csrf es el que evita que inyecten codigo malisioso a la aplicacion
+		http.authorizeRequests().requestMatchers("/administrador/**").hasRole("ADMIN").requestMatchers("/productos/**")
+				.hasRole("ADMIN").and()
+				// csrf evita que inyecten codigo malisioso a la aplicacion
 				.csrf(csfr -> csfr.disable()).formLogin().loginPage("/usuario/login").permitAll()
 				.defaultSuccessUrl("/usuario/acceder").and().logout().permitAll();
 		return http.build();
