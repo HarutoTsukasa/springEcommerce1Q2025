@@ -327,7 +327,7 @@
 	<!-- ======= Footer ======= -->
 	<footer id="footer" class="footer">
 		<div class="copyright">
-			&copy; Copyright <strong><span>NiceAdmin</span></strong>. All Rights Reserved
+			&copy; Copyright <strong><span id="currentYear"></span><span> NiceAdmin</span></strong>. All Rights Reserved
 		</div>
 		<div class="credits">
 			<!-- All the links in the footer should remain intact. -->
@@ -352,4 +352,8 @@
 
 	<!-- Template Main JS File -->
 	<script th:src="@{/assetsADMIN/js/main.js}"></script>
+
+	<script>
+		document.getElementById('currentYear').textContent = new Date().getFullYear();
+	</script>
 </div>

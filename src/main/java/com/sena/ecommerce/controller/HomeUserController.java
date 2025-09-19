@@ -2,7 +2,6 @@ package com.sena.ecommerce.controller;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -121,7 +120,7 @@ public class HomeUserController {
 		model.addAttribute("orden", orden);
 		// variable de sesion
 		model.addAttribute("sesion", session.getAttribute("idUsuario"));
-		
+
 		return "usuario/carrito";
 
 	}
@@ -187,6 +186,15 @@ public class HomeUserController {
 		for (DetalleOrden dt : detalles) {
 			dt.setOrden(orden);
 			detalleOrdenService.save(dt);
+			// descuento de cantidad de produto comprada del stock del producto
+			Producto p = dt.getProducto();
+			int cantComprada = dt.getCantidad().intValue();// conversion double a int
+			if (p.getCantidad() >= cantComprada) {
+				p.setCantidad(p.getCantidad() - cantComprada);
+				productoService.update(p);
+			} else {
+				throw new IllegalStateException("Stock insuficiente para el producto: " + p.getNombre());
+			}
 		}
 		// limpiar valores que no se añadan a la orden recien guardada
 		orden = new Orden();
@@ -199,7 +207,9 @@ public class HomeUserController {
 	public String searchProducto(@RequestParam String nombre, Model model) {
 		LOGGER.info("nombre del producto: {}", nombre);
 		List<Producto> productos = productoService.findAll().stream()
-				.filter(p -> p.getNombre().toUpperCase().contains(nombre.toUpperCase())).collect(Collectors.toList());
+				.filter(p -> p.getNombre().toUpperCase().contains(nombre.toUpperCase())
+						|| p.getDescripcion().toUpperCase().contains(nombre.toUpperCase()))
+				.collect(Collectors.toList());
 		model.addAttribute("productos", productos);
 		return "usuario/home";
 	}
