@@ -66,7 +66,7 @@ public class HomeUserController {
 	}
 
 	// metodo que carga el producto de usuario con el id
-	@GetMapping("productoHome/{id}")
+	@GetMapping("productohome/{id}")
 	public String productoHome(@PathVariable Integer id, Model model, HttpSession session) {
 		LOGGER.info("ID producto enviado como parametro {}", id);
 		// variable de clase producto
@@ -161,8 +161,8 @@ public class HomeUserController {
 	}
 
 	// metodo para pasar a la vista del resumen de la orden
-	@GetMapping("/order")
-	public String order(Model model, HttpSession session) {
+	@GetMapping("/orden")
+	public String orden(Model model, HttpSession session) {
 		Usuario u = usuarioService.findById(Integer.parseInt(session.getAttribute("idUsuario").toString())).get();
 		model.addAttribute("cart", detalles);
 		model.addAttribute("orden", orden);
@@ -204,13 +204,14 @@ public class HomeUserController {
 
 	// metodo post para buscar productos e la vista del home de usuario
 	@PostMapping("/search")
-	public String searchProducto(@RequestParam String nombre, Model model) {
+	public String searchProducto(@RequestParam String nombre, Model model, HttpSession session) {
 		LOGGER.info("nombre del producto: {}", nombre);
 		List<Producto> productos = productoService.findAll().stream()
 				.filter(p -> p.getNombre().toUpperCase().contains(nombre.toUpperCase())
 						|| p.getDescripcion().toUpperCase().contains(nombre.toUpperCase()))
 				.collect(Collectors.toList());
 		model.addAttribute("productos", productos);
+		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "usuario/home";
 	}
 
