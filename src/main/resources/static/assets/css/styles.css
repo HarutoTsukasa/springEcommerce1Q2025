@@ -409,3 +409,24 @@ section {
 .whatsapp-btn:hover {
 	transform: translateY(-50%) scale(1.1);
 }
+
+/* Estilos para la sección de login */
+.login-section {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    padding: 4rem 0;
+}
+
+.login-card {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark-mode .login-section {
+    background: linear-gradient(135deg, #2d1b69, #1a1033);
+}
+
+.dark-mode .login-card {
+    background-color: rgba(30, 30, 30, 0.7);
+}

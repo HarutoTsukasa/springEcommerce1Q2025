@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://thymeLeaf.org">
+
+<head th:insert="~{usuario/template_user.html::head}"></head>
+
+<body>
+	<div th:insert="~{usuario/template_user.html::headerLogout}" th:if="${sesion == null}"></div>
+	<div th:insert="~{usuario/template_user.html::headerLogin}" th:unless="${sesion == null}"></div>
+
+	<section></section>
+
+	<!-- Sección de Login -->
+	<section class="login-section mb-5">
+		<div class="container">
+			<h2 class="section-title text-white"><i class="bi bi-person-circle"></i> Iniciar Sesión</h2>
+			<div class="row justify-content-center">
+				<div class="col-md-6">
+					<div class="card login-card">
+						<div class="card-body p-4">
+							<form th:action="@{/usuario/login}" method="post">
+								<div class="mb-3">
+									<label for="sectionEmail" class="form-label">Email</label>
+									<input type="email" class="form-control" id="username" name="username"
+										placeholder="tucorreo@ejemplo.com" required>
+								</div>
+								<div class="mb-3">
+									<label for="sectionPassword" class="form-label">Contraseña</label>
+									<input type="password" class="form-control" id="password" name="password"
+										placeholder="Tu contraseña" required>
+								</div>
+								<div class="mb-3 form-check">
+									<input type="checkbox" class="form-check-input" id="sectionRemember">
+									<label class="form-check-label" for="sectionRemember">Recuérdame</label>
+								</div>
+								<button type="submit" class="btn btn-light w-100 mb-3">Iniciar Sesión</button>
+								<div class="text-center">
+									<a href="#">¿Olvidaste tu contraseña?</a>
+								</div>
+								<hr>
+								<div class="text-center">
+									<p>¿No tienes cuenta? <a th:href="@{/usuario/registro}">Regístrate</a></p>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+
+	<div th:insert="~{usuario/template_user.html::footer}"></div>
+
+	<div th:insert="~{usuario/template_user.html::jsFiles}"></div>
+</body>
+
+</html>

@@ -7,7 +7,10 @@ Esta API proporciona endpoints RESTful para realizar operaciones CRUD sobre prod
 - Spring Data JPA
 - Thymeleaf (para las vistas)
 - Base de datos: MySQL
+- Gestor DB: Mysql workbench community
 - Maven
+- Spring Security
+- Java 17
 
 ## Instalación y ejecución
 1. Clonar el repositorio
