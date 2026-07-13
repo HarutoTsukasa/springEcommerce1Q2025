@@ -26,7 +26,7 @@ public class SpringBootSecurity {
 	@SuppressWarnings({ /* "removal", */ "deprecation" })
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.authorizeRequests(requests -> requests.requestMatchers("/administrador/**").hasRole("ADMIN")
+		http.authorizeHttpRequests(requests -> requests.requestMatchers("/administrador/**").hasRole("ADMIN")
 				.requestMatchers("/productos/**").hasRole("ADMIN"))
 				// csrf evita que inyecten codigo malisioso a la aplicacion
 				// .csrf(csfr ->

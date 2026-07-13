@@ -59,7 +59,7 @@ public class ApiProductoController {
 	@PutMapping("/api/{id}")
 	public ResponseEntity<Producto> updateProduct(@PathVariable Integer id, @RequestBody Producto productDetails) {
 		Optional<Producto> producto = productoservice.get(id);
-		if (!producto.isPresent()) {
+		if (producto.isEmpty()) {
 			return ResponseEntity.notFound().build();
 		}
 
@@ -82,7 +82,7 @@ public class ApiProductoController {
 	@DeleteMapping("/api/{id}")
 	public ResponseEntity<?> deleteProduct(@PathVariable Integer id) {
 		Optional<Producto> producto = productoservice.get(id);
-		if (!producto.isPresent()) {
+		if (producto.isEmpty()) {
 			return ResponseEntity.notFound().build();
 		}
 
