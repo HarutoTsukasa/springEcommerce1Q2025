@@ -1,0 +1,94 @@
+package com.sena.ecommerce.DTO;
+
+public class ProductoDTO {
+	
+    private Integer id;
+    private String nombre;
+    private String descripcion;
+    private String imagen;
+    private Double precio;
+    private Integer cantidad;
+    private Integer usuarioId;
+    private String usuarioNombre;
+ 
+    public ProductoDTO() {
+    }
+ 
+    public ProductoDTO(Integer id, String nombre, String descripcion, String imagen, Double precio,
+            Integer cantidad, Integer usuarioId, String usuarioNombre) {
+        this.id = id;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.imagen = imagen;
+        this.precio = precio;
+        this.cantidad = cantidad;
+        this.usuarioId = usuarioId;
+        this.usuarioNombre = usuarioNombre;
+    }
+ 
+    public Integer getId() {
+        return id;
+    }
+ 
+    public void setId(Integer id) {
+        this.id = id;
+    }
+ 
+    public String getNombre() {
+        return nombre;
+    }
+ 
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+ 
+    public String getDescripcion() {
+        return descripcion;
+    }
+ 
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+ 
+    public String getImagen() {
+        return imagen;
+    }
+ 
+    public void setImagen(String imagen) {
+        this.imagen = imagen;
+    }
+ 
+    public Double getPrecio() {
+        return precio;
+    }
+ 
+    public void setPrecio(Double precio) {
+        this.precio = precio;
+    }
+ 
+    public Integer getCantidad() {
+        return cantidad;
+    }
+ 
+    public void setCantidad(Integer cantidad) {
+        this.cantidad = cantidad;
+    }
+ 
+    public Integer getUsuarioId() {
+        return usuarioId;
+    }
+ 
+    public void setUsuarioId(Integer usuarioId) {
+        this.usuarioId = usuarioId;
+    }
+ 
+    public String getUsuarioNombre() {
+        return usuarioNombre;
+    }
+ 
+    public void setUsuarioNombre(String usuarioNombre) {
+        this.usuarioNombre = usuarioNombre;
+    }
+
+
+}

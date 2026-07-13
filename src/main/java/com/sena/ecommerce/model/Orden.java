@@ -26,7 +26,7 @@ public class Orden {
 	@ManyToOne
 	private Usuario usuario;
 
-	@OneToMany(mappedBy = "orden", fetch = FetchType.EAGER)
+	@OneToMany(mappedBy = "orden", fetch = FetchType.EAGER)// pendiente en neuvo proyecto
 	private List<DetalleOrden> detalle;
 
 	public Orden() {

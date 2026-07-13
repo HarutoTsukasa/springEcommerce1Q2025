@@ -1,6 +1,6 @@
 package com.sena.ecommerce.service;
 
-import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -19,59 +19,36 @@ public class OrdenServiceImplement implements IOrdenService {
 
 	@Override
 	public Orden save(Orden orden) {
-		// TODO Auto-generated method stub
 		return ordenRepository.save(orden);
 	}
 
 	@Override
 	public List<Orden> findAll() {
-		// TODO Auto-generated method stub
 		return ordenRepository.findAll();
 	}
 
+	// BUG ORIGINAL: las ramas if/else if solo cubrían numero < 1000. A partir
+	// de la orden 1000, "numeroConcatenado" quedaba en "" (sin rama else),
+	// y la siguiente llamada hacía Integer.parseInt("") sobre esa cadena
+	// vacía al recorrer las órdenes existentes, reventando con
+	// NumberFormatException. String.format con ancho fijo cubre cualquier
+	// magnitud sin ramas manuales.
 	@Override
 	public String generarNumeroOrden() {
-
-		int numero = 0;
-
-		String numeroConcatenado = "";
-
 		List<Orden> ordenes = findAll();
 
-		List<Integer> numeros = new ArrayList<Integer>();
+		int numero = ordenes.stream().map(Orden::getNumero).mapToInt(Integer::parseInt).max().orElse(0) + 1;
 
-		// funciones java 8
-		// una variable anonima
-		ordenes.stream().forEach(o -> numeros.add(Integer.parseInt(o.getNumero())));
-
-		// validacion
-		if (ordenes.isEmpty()) {
-			numero = 1;
-		} else {
-			numero = numeros.stream().max(Integer::compare).get();
-			numero++;
-		}
-
-		if (numero < 10) {
-			numeroConcatenado = "000000000000" + String.valueOf(numero);
-		} else if (numero < 100) {
-			numeroConcatenado = "00000000000" + String.valueOf(numero);
-		} else if (numero < 1000) {
-			numeroConcatenado = "0000000000" + String.valueOf(numero);
-		}
-
-		return numeroConcatenado;
+		return String.format("%013d", numero);
 	}
 
 	@Override
 	public List<Orden> findByUsuario(Usuario usuario) {
-		// TODO Auto-generated method stub
 		return ordenRepository.findByUsuario(usuario);
 	}
 
 	@Override
 	public Optional<Orden> findById(Integer id) {
-		// TODO Auto-generated method stub
 		return ordenRepository.findById(id);
 	}
 

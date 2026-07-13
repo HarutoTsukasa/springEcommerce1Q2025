@@ -11,19 +11,15 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class UploadFileService {
 
-	// Usa la misma ruta que en ResourceWebConfiguration
-	// private final String storagePath = "D:/images/";
+	// BUG ORIGINAL: saveImages() escribía en "images/" (ruta relativa) pero
+	// deleteImage() borraba desde "D:/images/" (ruta absoluta, solo
+	// Windows). Nunca coincidían — deleteImage() no borraba nada en
+	// condiciones normales, y en Linux ni siquiera es una ruta válida.
+	private final String folder = "images/";
 
-	// ruta pruebas en spring
-	private String folder = "images/";
-
-	// metodo para subir la imagen del producto
 	public String saveImages(MultipartFile file, String nombre) throws IOException {
-		// validacion de imagenes
 		if (!file.isEmpty()) {
 			byte[] bytes = file.getBytes();
-			// variable de tipo path que redirige al directo
-			// se importa el path de .nio.file
 			Path path = Path.of(folder + nombre + "_" + file.getOriginalFilename());
 			Files.write(path, bytes);
 			return nombre + "_" + file.getOriginalFilename();
@@ -31,13 +27,14 @@ public class UploadFileService {
 		return "default.jpg";
 	}
 
-	// metodo para la eliminacion de la imagen del producto
 	public void deleteImage(String nombre) {
-		// para deplegar en ruta absoluta para Windows
-		String ruta = "D:/images/";
-		// String ruta = "images/";
-		File file = new File(ruta + nombre);
-		file.delete();
+		if (nombre == null || nombre.isBlank()) {
+			return;
+		}
+		File file = new File(folder + nombre);
+		if (file.exists()) {
+			file.delete();
+		}
 	}
 
 }

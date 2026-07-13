@@ -32,10 +32,17 @@ import jakarta.servlet.http.HttpSession;
 @RequestMapping("/") // la raiz del proyecto
 public class HomeUserController {
 
-	// instancia de LOGGER para ver datos por consola
+	// BUG CRÍTICO ORIGINAL: "List<DetalleOrden> detalles" y "Orden orden" eran
+	// campos de instancia de este @Controller. Spring crea los controllers
+	// como singletons, así que ese carrito era UNO SOLO compartido por todos
+	// los usuarios concurrentes de la aplicación: el carrito de un usuario
+	// podía mezclarse o pisarse con el de otro. Ahora viven en la sesión HTTP
+	// de cada usuario.
+	private static final String CART_SESSION_KEY = "carrito";
+	private static final String ORDEN_SESSION_KEY = "ordenActual";
+
 	private final Logger LOGGER = (Logger) LoggerFactory.getLogger(HomeUserController.class);
 
-	// instancia de objeto - servicio
 	@Autowired
 	private IProductoService productoService;
 
@@ -48,147 +55,147 @@ public class HomeUserController {
 	@Autowired
 	private IDetalleOrdenService detalleOrdenService;
 
-	// dos variables
-	// lista de detalles de la orden para guardarlos en la db
-	List<DetalleOrden> detalles = new ArrayList<DetalleOrden>();
+	@SuppressWarnings("unchecked")
+	private List<DetalleOrden> getCarrito(HttpSession session) {
+		List<DetalleOrden> carrito = (List<DetalleOrden>) session.getAttribute(CART_SESSION_KEY);
+		if (carrito == null) {
+			carrito = new ArrayList<>();
+			session.setAttribute(CART_SESSION_KEY, carrito);
+		}
+		return carrito;
+	}
 
-	// objeto que almacena los datos de la orden
-	Orden orden = new Orden();
+	private Orden getOrdenActual(HttpSession session) {
+		Orden orden = (Orden) session.getAttribute(ORDEN_SESSION_KEY);
+		if (orden == null) {
+			orden = new Orden();
+			session.setAttribute(ORDEN_SESSION_KEY, orden);
+		}
+		return orden;
+	}
 
-	// metodo que mapea la vista de usuario en la raiz del proyecto
 	@GetMapping("")
 	public String home(Model model, HttpSession session) {
 		LOGGER.info("sesion usuario: {}", session.getAttribute("idUsuario"));
 		model.addAttribute("productos", productoService.findAll());
-		// variable de sesion
 		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "usuario/home";
 	}
 
-	// metodo que carga el producto de usuario con el id
 	@GetMapping("productohome/{id}")
 	public String productoHome(@PathVariable Integer id, Model model, HttpSession session) {
-		LOGGER.info("ID producto enviado como parametro {}", id);
-		// variable de clase producto
-		Producto p = new Producto();
-		// objeto de tipo optional
 		Optional<Producto> op = productoService.get(id);
-		// pasar el produto
-		p = op.get();
-		// enviar a la vista con el model los detalles del producto con el id
-		model.addAttribute("producto", p);
-		// variable de sesion
+		if (op.isEmpty()) {
+			return "redirect:/";
+		}
+		model.addAttribute("producto", op.get());
 		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "usuario/productoHome";
 	}
 
-	// metodo para enviar del boton de productohome al carrito
 	@PostMapping("/cart")
 	public String addCart(@RequestParam Integer id, @RequestParam Double cantidad, Model model, HttpSession session) {
-		DetalleOrden detaorden = new DetalleOrden();
-		Producto p = new Producto();
-		// variable que siempre que este en el metodo inicializa en cero despues de cada
-		// compra
-		double sumaTotal = 0;
+		List<DetalleOrden> carrito = getCarrito(session);
+		Orden orden = getOrdenActual(session);
+
 		Optional<Producto> op = productoService.get(id);
-		LOGGER.info("Producto añadido: {}", op.get());
-		LOGGER.info("Cantidad añadida: {}", cantidad);
-		p = op.get();
-		detaorden.setCantidad(cantidad);
-		detaorden.setPrecio(p.getPrecio());
-		detaorden.setNombre(p.getNombre());
-		detaorden.setTotal(p.getPrecio() * cantidad);
-		detaorden.setProducto(p);
-		// validacion para evitar duplicados de productos
-		Integer idProducto = p.getId();
-		// funcion lamda stream y funcion anonima con predicado anyMatch
-		//
-		boolean insertado = detalles.stream().anyMatch(prod -> prod.getProducto().getId() == idProducto);
-		// si no es true añade el producto
-		if (!insertado) {
-			// detalles
-			detalles.add(detaorden);
+		if (op.isEmpty()) {
+			return "redirect:/";
+		}
+		Producto p = op.get();
+
+		boolean yaInsertado = carrito.stream().anyMatch(prod -> prod.getProducto().getId().equals(p.getId()));
+		if (!yaInsertado) {
+			DetalleOrden detaorden = new DetalleOrden();
+			detaorden.setCantidad(cantidad);
+			detaorden.setPrecio(p.getPrecio());
+			detaorden.setNombre(p.getNombre());
+			detaorden.setTotal(p.getPrecio() * cantidad);
+			detaorden.setProducto(p);
+			carrito.add(detaorden);
 		}
 
-		// suma de totales de la lista que el usuario añada al carrito
-		// funcion de java 8 lamda stream
-		// funcion de java 8 anonima dt
-		sumaTotal = detalles.stream().mapToDouble(dt -> dt.getTotal()).sum();
-		// pasar variables a la vista
+		double sumaTotal = carrito.stream().mapToDouble(DetalleOrden::getTotal).sum();
 		orden.setTotal(sumaTotal);
-		model.addAttribute("cart", detalles);
+
+		model.addAttribute("cart", carrito);
 		model.addAttribute("orden", orden);
-		// variable de sesion
 		model.addAttribute("sesion", session.getAttribute("idUsuario"));
-
 		return "usuario/carrito";
-
 	}
 
-	// METODO PARA QUITAR PRODUCTOS DEL CARRITO
 	@GetMapping("/delete/cart/{id}")
 	public String deleteProductoCart(@PathVariable Integer id, Model model, HttpSession session) {
-		// lista nueva de productos
-		List<DetalleOrden> ordenesNuevas = new ArrayList<DetalleOrden>();
-		// quitar objeto de la lista de detalleOrden
-		for (DetalleOrden detalleOrden : detalles) {
-			if (detalleOrden.getProducto().getId() != id) {
-				ordenesNuevas.add(detalleOrden);
-			}
-		}
-		// poner la nueva lista con los productos restantes del carrito
-		detalles = ordenesNuevas;
-		// recalcular los productos del carrito
-		double sumaTotal = 0;
-		sumaTotal = detalles.stream().mapToDouble(dt -> dt.getTotal()).sum();
-		// pasar variables a la vista
+		List<DetalleOrden> carrito = getCarrito(session);
+		Orden orden = getOrdenActual(session);
+
+		carrito.removeIf(detalleOrden -> detalleOrden.getProducto().getId().equals(id));
+
+		double sumaTotal = carrito.stream().mapToDouble(DetalleOrden::getTotal).sum();
 		orden.setTotal(sumaTotal);
-		model.addAttribute("cart", detalles);
+
+		model.addAttribute("cart", carrito);
 		model.addAttribute("orden", orden);
-		// variable de sesion
 		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "usuario/carrito";
 	}
 
-	// metodo para redirigir al carrito sin productos
 	@GetMapping("/getCart")
 	public String getCart(Model model, HttpSession session) {
-		model.addAttribute("cart", detalles);
-		model.addAttribute("orden", orden);
-		// variable de sesion
+		model.addAttribute("cart", getCarrito(session));
+		model.addAttribute("orden", getOrdenActual(session));
 		model.addAttribute("sesion", session.getAttribute("idUsuario"));
 		return "/usuario/carrito";
 	}
 
-	// metodo para pasar a la vista del resumen de la orden
 	@GetMapping("/orden")
 	public String orden(Model model, HttpSession session) {
-		Usuario u = usuarioService.findById(Integer.parseInt(session.getAttribute("idUsuario").toString())).get();
-		model.addAttribute("cart", detalles);
-		model.addAttribute("orden", orden);
-		model.addAttribute("usuario", u);
-		// variable de sesion
-		model.addAttribute("sesion", session.getAttribute("idUsuario"));
+		// Antes: Integer.parseInt(session.getAttribute("idUsuario").toString())
+		// sin comprobar null primero — NPE si se llegaba aquí sin sesión.
+		Object idUsuario = session.getAttribute("idUsuario");
+		if (idUsuario == null) {
+			return "redirect:/usuario/login";
+		}
+		Optional<Usuario> u = usuarioService.findById(Integer.parseInt(idUsuario.toString()));
+		if (u.isEmpty()) {
+			return "redirect:/usuario/login";
+		}
+
+		model.addAttribute("cart", getCarrito(session));
+		model.addAttribute("orden", getOrdenActual(session));
+		model.addAttribute("usuario", u.get());
+		model.addAttribute("sesion", idUsuario);
 		return "usuario/resumenorden";
 	}
 
 	@GetMapping("/saveOrder")
 	public String saveOrder(HttpSession session) {
-		// guardar orden
-		Date fechacreacion = new Date();
-		orden.setFechacreacion(fechacreacion);
+		Object idUsuario = session.getAttribute("idUsuario");
+		if (idUsuario == null) {
+			return "redirect:/usuario/login";
+		}
+		Optional<Usuario> optUsuario = usuarioService.findById(Integer.parseInt(idUsuario.toString()));
+		if (optUsuario.isEmpty()) {
+			return "redirect:/usuario/login";
+		}
+
+		List<DetalleOrden> carrito = getCarrito(session);
+		if (carrito.isEmpty()) {
+			return "redirect:/getCart";
+		}
+		Orden orden = getOrdenActual(session);
+
+		orden.setFechacreacion(new Date());
 		orden.setNumero(ordenService.generarNumeroOrden());
-		// usuario que se referencia en esa compra previamente logeado
-		Usuario u = usuarioService.findById(Integer.parseInt(session.getAttribute("idUsuario").toString())).get();
-		orden.setUsuario(u);
+		orden.setUsuario(optUsuario.get());
 		ordenService.save(orden);
-		// guardar detalles de la orden
-		for (DetalleOrden dt : detalles) {
+
+		for (DetalleOrden dt : carrito) {
 			dt.setOrden(orden);
 			detalleOrdenService.save(dt);
-			// descuento de cantidad de produto comprada del stock del producto
+
 			Producto p = dt.getProducto();
-			int cantComprada = dt.getCantidad().intValue();// conversion double a int
+			int cantComprada = dt.getCantidad().intValue();
 			if (p.getCantidad() >= cantComprada) {
 				p.setCantidad(p.getCantidad() - cantComprada);
 				productoService.update(p);
@@ -196,16 +203,14 @@ public class HomeUserController {
 				throw new IllegalStateException("Stock insuficiente para el producto: " + p.getNombre());
 			}
 		}
-		// limpiar valores que no se añadan a la orden recien guardada
-		orden = new Orden();
-		detalles.clear();
+
+		session.removeAttribute(CART_SESSION_KEY);
+		session.removeAttribute(ORDEN_SESSION_KEY);
 		return "redirect:/";
 	}
 
-	// metodo post para buscar productos e la vista del home de usuario
 	@PostMapping("/search")
 	public String searchProducto(@RequestParam String nombre, Model model, HttpSession session) {
-		LOGGER.info("nombre del producto: {}", nombre);
 		List<Producto> productos = productoService.findAll().stream()
 				.filter(p -> p.getNombre().toUpperCase().contains(nombre.toUpperCase())
 						|| p.getDescripcion().toUpperCase().contains(nombre.toUpperCase()))

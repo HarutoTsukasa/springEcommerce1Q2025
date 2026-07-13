@@ -5,11 +5,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.sena.ecommerce.DTO.ProductoDTO;
+import com.sena.ecommerce.DTO.ProductoMapper;
+import com.sena.ecommerce.DTO.ProductoRequestDTO;
 import com.sena.ecommerce.model.Producto;
 import com.sena.ecommerce.model.Usuario;
 import com.sena.ecommerce.service.IProductoService;
 import com.sena.ecommerce.service.IUsuarioService;
 import com.sena.ecommerce.service.UploadFileService;
+
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,57 +34,54 @@ public class ApiProductoController {
 	private IUsuarioService usuarioservice;
 
 	// Endpoint GET para obtener todos los productos (API)
+
+	// Antes: devolvía List<Producto> directamente. Con Producto.usuario EAGER
+	// y Usuario.productos/ordenes LAZY + spring.jpa.open-in-view=false, esto
+	// lanzaba LazyInitializationException al serializar, y de paso exponía
+	// la entidad Usuario completa (incluida la contraseña). El DTO corta
+	// ambos problemas de raíz.
 	@GetMapping("/api")
-	public List<Producto> getAllProducts() {
-		return productoservice.findAll();
+	public List<ProductoDTO> getAllProducts() {
+		return productoservice.findAll().stream().map(ProductoMapper::toDTO).toList();
 	}
 
-	// Endpoint GET para obtener un producto por ID (API)
 	@GetMapping("/api/{id}")
-	public ResponseEntity<Producto> getProductById(@PathVariable Integer id) {
-		Optional<Producto> producto = productoservice.get(id);
-		return producto.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+	public ResponseEntity<ProductoDTO> getProductById(@PathVariable Integer id) {
+		return productoservice.get(id).map(ProductoMapper::toDTO).map(ResponseEntity::ok)
+				.orElse(ResponseEntity.notFound().build());
 	}
 
-	// Endpoint POST para crear nuevo producto (API)
+	// Antes: usuarioservice.findById(4).get() — hardcodeado y sin control de
+	// sesión. Ahora toma el usuario autenticado real desde la sesión, y
+	// responde 401 si no hay sesión activa.
 	@PostMapping("/api")
-	public ResponseEntity<Producto> createProduct(@RequestBody Producto producto) {
-		// Obtener usuario de la sesión (ajustar según tu lógica de autenticación)
-		Usuario u = usuarioservice.findById(4).get();
-		producto.setUsuario(u);
+	public ResponseEntity<?> createProduct(@Valid @RequestBody ProductoRequestDTO request, HttpSession session) {
+		Usuario usuario = usuarioActual(session);
+		if (usuario == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Debe iniciar sesión para crear productos");
+		}
 
-		// Setear imagen por defecto si no se proporciona
-		if (producto.getImagen() == null)
-			producto.setImagen("default.jpg");
+		Producto producto = ProductoMapper.toEntity(request);
+		producto.setUsuario(usuario);
 
-		Producto savedProduct = productoservice.save(producto);
-		return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
+		Producto guardado = productoservice.save(producto);
+		return ResponseEntity.status(HttpStatus.CREATED).body(ProductoMapper.toDTO(guardado));
 	}
 
-	// Endpoint PUT para actualizar producto (API)
 	@PutMapping("/api/{id}")
-	public ResponseEntity<Producto> updateProduct(@PathVariable Integer id, @RequestBody Producto productDetails) {
-		Optional<Producto> producto = productoservice.get(id);
-		if (producto.isEmpty()) {
+	public ResponseEntity<?> updateProduct(@PathVariable Integer id, @Valid @RequestBody ProductoRequestDTO request) {
+		Optional<Producto> existente = productoservice.get(id);
+		if (existente.isEmpty()) {
 			return ResponseEntity.notFound().build();
 		}
 
-		Producto existingProduct = producto.get();
-		existingProduct.setNombre(productDetails.getNombre());
-		existingProduct.setDescripcion(productDetails.getDescripcion());
-		existingProduct.setPrecio(productDetails.getPrecio());
-		existingProduct.setCantidad(productDetails.getCantidad());
+		Producto producto = existente.get();
+		ProductoMapper.copyToEntity(request, producto);
+		productoservice.update(producto);
 
-		// Mantener la imagen existente a menos que se envíe una nueva
-		if (productDetails.getImagen() != null) {
-			existingProduct.setImagen(productDetails.getImagen());
-		}
-
-		productoservice.save(existingProduct);
-		return ResponseEntity.ok(existingProduct);
+		return ResponseEntity.ok(ProductoMapper.toDTO(producto));
 	}
 
-	// Endpoint DELETE para eliminar producto (API)
 	@DeleteMapping("/api/{id}")
 	public ResponseEntity<?> deleteProduct(@PathVariable Integer id) {
 		Optional<Producto> producto = productoservice.get(id);
@@ -87,11 +90,22 @@ public class ApiProductoController {
 		}
 
 		Producto p = producto.get();
-		if (!p.getImagen().equals("default.jpg")) {
+		// Antes: p.getImagen().equals("default.jpg") reventaba con NPE si
+		// getImagen() era null.
+		if (p.getImagen() != null && !p.getImagen().equals("default.jpg")) {
 			upload.deleteImage(p.getImagen());
 		}
 
 		productoservice.delete(id);
-		return ResponseEntity.ok().build();
+		return ResponseEntity.noContent().build();
 	}
+
+	private Usuario usuarioActual(HttpSession session) {
+		Object idUsuario = session.getAttribute("idUsuario");
+		if (idUsuario == null) {
+			return null;
+		}
+		return usuarioservice.findById(Integer.parseInt(idUsuario.toString())).orElse(null);
+	}
+
 }
