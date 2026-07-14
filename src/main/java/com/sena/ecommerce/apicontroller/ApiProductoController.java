@@ -1,13 +1,13 @@
-package com.sena.ecommerce.controller;
+package com.sena.ecommerce.apicontroller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.sena.ecommerce.DTO.ProductoDTO;
-import com.sena.ecommerce.DTO.ProductoMapper;
-import com.sena.ecommerce.DTO.ProductoRequestDTO;
+import com.sena.ecommerce.dto.ProductoDTO;
+import com.sena.ecommerce.dto.ProductoMapper;
+import com.sena.ecommerce.dto.ProductoRequestDTO;
 import com.sena.ecommerce.model.Producto;
 import com.sena.ecommerce.model.Usuario;
 import com.sena.ecommerce.service.IProductoService;

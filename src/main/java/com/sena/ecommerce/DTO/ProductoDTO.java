@@ -1,4 +1,4 @@
-package com.sena.ecommerce.DTO;
+package com.sena.ecommerce.dto;
 
 public class ProductoDTO {
 	

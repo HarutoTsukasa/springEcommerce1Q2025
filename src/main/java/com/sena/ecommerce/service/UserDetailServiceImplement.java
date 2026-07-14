@@ -22,29 +22,29 @@ public class UserDetailServiceImplement implements UserDetailsService {
 	@Autowired
 	private IUsuarioService usuarioService;
 
-	// encriptador de contraseña
-	// @Autowired
-	// private BCryptPasswordEncoder bCrypt;
-
-	// guardado de sesion de usuario
 	@Autowired
 	HttpSession session;
 
-	// logger para evitar el uso del system.out.println
 	private Logger log = LoggerFactory.getLogger(UserDetailServiceImplement.class);
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		log.info("Este es el username");
+		// El campo del formulario se llama "username" pero contiene el email
+		// (el label del login dice "Email"), por eso se busca con findByEmail.
 		Optional<Usuario> optionalUser = usuarioService.findByEmail(username);
 		if (optionalUser.isPresent()) {
-			log.info("Esto es el ID del usuario: {}", optionalUser.get().getId());
-			session.setAttribute("idUsuario", optionalUser.get().getId());
 			Usuario usuario = optionalUser.get();
-			return User.builder().username(usuario.getNombre()).password(usuario.getPassword()).roles(usuario.getTipo())
+			log.info("Esto es el ID del usuario: {}", usuario.getId());
+			session.setAttribute("idUsuario", usuario.getId());
+
+			// Antes: .username(usuario.getNombre()) — usaba el nombre real de la
+			// persona como identidad interna de Spring Security. Dos usuarios con
+			// el mismo nombre habrían compartido ese identificador. Ahora se usa
+			// el email, que es el mismo campo único con el que se hizo la
+			// búsqueda arriba.
+			return User.builder().username(usuario.getEmail()).password(usuario.getPassword()).roles(usuario.getTipo())
 					.build();
 		} else {
-			// excepcion
 			throw new UsernameNotFoundException("Usuario no encontrado");
 		}
 	}

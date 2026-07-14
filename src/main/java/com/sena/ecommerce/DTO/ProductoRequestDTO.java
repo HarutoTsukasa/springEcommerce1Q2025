@@ -1,4 +1,4 @@
-package com.sena.ecommerce.DTO;
+package com.sena.ecommerce.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

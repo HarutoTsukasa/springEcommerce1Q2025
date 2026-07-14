@@ -33,7 +33,6 @@ public class UsuarioController {
 	@Autowired
 	private IOrdenService ordenService;
 
-	// nuevo objeto encriptador
 	BCryptPasswordEncoder passEncode = new BCryptPasswordEncoder();
 
 	@GetMapping("/registro")
@@ -45,7 +44,6 @@ public class UsuarioController {
 	public String save(Usuario usuario, Model model) {
 		LOGGER.info("Usuario a registrar: {}", usuario);
 		usuario.setTipo("USER");
-		// encriptado de contraseña
 		usuario.setPassword(passEncode.encode(usuario.getPassword()));
 		usuarioService.save(usuario);
 		return "redirect:/";
@@ -56,53 +54,61 @@ public class UsuarioController {
 		return "usuario/login";
 	}
 
-	/*
-	 * cambiar post por get en spring security metodo de autenticacion 1 con
-	 * postmapping sin spring security en post metodo con sping security en get
-	 */
-
 	@GetMapping("/acceder")
-	public String acceder(Usuario usuario, HttpSession session) {
-		LOGGER.info("Accesos: {}", usuario);
-		// Optional<Usuario> userEmail = usuarioService.findByEmail(usuario.getEmail());
-		Optional<Usuario> user = usuarioService
-				.findById(Integer.parseInt(session.getAttribute("idUsuario").toString()));
-		LOGGER.info("usuario db obtenido: {}", user.get());
-		if (user.isPresent()) {
-			session.setAttribute("idUsuario", user.get().getId());
-			if (user.get().getTipo().equals("ADMIN")) {
-				return "redirect:/administrador";
-			} else {
-				return "redirect:/";
-			}
-		} else {
-			LOGGER.warn("Usuario no existen en DB");
+	public String acceder(HttpSession session) {
+		// Antes: Integer.parseInt(session.getAttribute("idUsuario").toString())
+		// sin comprobar null primero. Si alguien llegaba a esta URL sin haberse
+		// autenticado (idUsuario nunca seteado), esto lanzaba NullPointerException
+		// en vez de redirigir a login.
+		Object idUsuarioAttr = session.getAttribute("idUsuario");
+		if (idUsuarioAttr == null) {
+			LOGGER.warn("Acceso a /usuario/acceder sin sesión activa");
+			return "redirect:/usuario/login";
+		}
+
+		Optional<Usuario> user = usuarioService.findById(Integer.parseInt(idUsuarioAttr.toString()));
+		if (user.isEmpty()) {
+			LOGGER.warn("Usuario no encontrado en DB para id de sesión {}", idUsuarioAttr);
+			return "redirect:/usuario/login";
+		}
+
+		if (user.get().getTipo().equals("ADMIN")) {
+			return "redirect:/administrador";
 		}
 		return "redirect:/";
 	}
 
 	@GetMapping("/cerrar")
 	public String cerrarSesion(HttpSession session) {
-		session.removeAttribute("idUsuario");
+		session.invalidate();
 		return "redirect:/";
 	}
 
-	// metodo para redirigir a la vista de compras del usuario
 	@GetMapping("/compras")
 	public String compras(HttpSession session, Model model) {
-		model.addAttribute("sesion", session.getAttribute("idUsuario"));
-		Usuario usuario = usuarioService.findById(Integer.parseInt(session.getAttribute("idUsuario").toString())).get();
-		List<Orden> ordenes = ordenService.findByUsuario(usuario);
+		Object idUsuarioAttr = session.getAttribute("idUsuario");
+		if (idUsuarioAttr == null) {
+			return "redirect:/usuario/login";
+		}
+		model.addAttribute("sesion", idUsuarioAttr);
+		Optional<Usuario> usuario = usuarioService.findById(Integer.parseInt(idUsuarioAttr.toString()));
+		if (usuario.isEmpty()) {
+			return "redirect:/usuario/login";
+		}
+		List<Orden> ordenes = ordenService.findByUsuario(usuario.get());
 		model.addAttribute("ordenes", ordenes);
 		return "usuario/compras";
 	}
 
 	@GetMapping("/detalle/{id}")
 	public String detalleCompra(HttpSession session, Model model, @PathVariable Integer id) {
-		// sesion de usuario o idUsuario
-		model.addAttribute("sesion", session.getAttribute("idUsuario"));
+		Object idUsuarioAttr = session.getAttribute("idUsuario");
+		model.addAttribute("sesion", idUsuarioAttr);
 		LOGGER.info("Id de la orden: {}", id);
 		Optional<Orden> orden = ordenService.findById(id);
+		if (orden.isEmpty()) {
+			return "redirect:/usuario/compras";
+		}
 		model.addAttribute("detalles", orden.get().getDetalle());
 		return "usuario/detallecompra";
 	}

@@ -24,6 +24,10 @@ public class SpringBootSecurity {
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.authorizeHttpRequests(requests -> requests.requestMatchers("/administrador/**").hasRole("ADMIN")
 				.requestMatchers("/productos/**").hasRole("ADMIN")
+				// A diferencia del catálogo de productos, la lista de usuarios y de
+				// órdenes contiene datos personales y de compra: nunca deben quedar
+				// públicas, ni siquiera en solo lectura.
+				.requestMatchers("/apiusuarios/**").hasRole("ADMIN").requestMatchers("/apiordenes/**").hasRole("ADMIN")
 				// Antes: /apiproductos/** quedaba totalmente fuera de estas reglas,
 				// así que cualquiera sin sesión podía crear/editar/borrar productos
 				// vía API. Ahora exige sesión para crear y rol ADMIN para

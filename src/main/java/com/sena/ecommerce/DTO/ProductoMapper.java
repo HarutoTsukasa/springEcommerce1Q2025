@@ -1,4 +1,4 @@
-package com.sena.ecommerce.DTO;
+package com.sena.ecommerce.dto;
 
 import com.sena.ecommerce.model.Producto;
 import com.sena.ecommerce.model.Usuario;
