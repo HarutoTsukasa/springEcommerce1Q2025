@@ -6,6 +6,9 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -56,21 +59,25 @@ public class UsuarioController {
 
 	@GetMapping("/acceder")
 	public String acceder(HttpSession session) {
-		// Antes: Integer.parseInt(session.getAttribute("idUsuario").toString())
-		// sin comprobar null primero. Si alguien llegaba a esta URL sin haberse
-		// autenticado (idUsuario nunca seteado), esto lanzaba NullPointerException
-		// en vez de redirigir a login.
-		Object idUsuarioAttr = session.getAttribute("idUsuario");
-		if (idUsuarioAttr == null) {
-			LOGGER.warn("Acceso a /usuario/acceder sin sesión activa");
+		// Este endpoint es el defaultSuccessUrl de Spring Security (con
+		// alwaysUse=true en SpringBootSecurity), así que solo se llega aquí
+		// después de que la contraseña ya fue verificada correctamente. Es el
+		// único lugar donde debe marcarse "idUsuario" en la sesión — nunca
+		// dentro de loadUserByUsername(), que corre antes de esa verificación.
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+			LOGGER.warn("Acceso a /usuario/acceder sin autenticación real");
 			return "redirect:/usuario/login";
 		}
 
-		Optional<Usuario> user = usuarioService.findById(Integer.parseInt(idUsuarioAttr.toString()));
+		String email = auth.getName(); // es el email: loadUserByUsername() lo setea como username
+		Optional<Usuario> user = usuarioService.findByEmail(email);
 		if (user.isEmpty()) {
-			LOGGER.warn("Usuario no encontrado en DB para id de sesión {}", idUsuarioAttr);
+			LOGGER.warn("Usuario autenticado no encontrado en DB para email {}", email);
 			return "redirect:/usuario/login";
 		}
+
+		session.setAttribute("idUsuario", user.get().getId());
 
 		if (user.get().getTipo().equals("ADMIN")) {
 			return "redirect:/administrador";

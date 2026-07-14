@@ -17,6 +17,13 @@
 				<div class="col-md-6">
 					<div class="card login-card">
 						<div class="card-body p-4">
+							<div class="alert alert-danger" th:if="${param.error}">
+								Email o contraseña incorrectos.
+							</div>
+							<div class="alert alert-success" th:if="${param.logout}">
+								Sesión cerrada correctamente.
+							</div>
+
 							<form th:action="@{/usuario/login}" method="post">
 								<div class="mb-3">
 									<label for="sectionEmail" class="form-label">Email</label>

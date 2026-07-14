@@ -14,19 +14,26 @@ import org.springframework.stereotype.Service;
 
 import com.sena.ecommerce.model.Usuario;
 
-import jakarta.servlet.http.HttpSession;
-
 @Service
 public class UserDetailServiceImplement implements UserDetailsService {
 
 	@Autowired
 	private IUsuarioService usuarioService;
 
-	@Autowired
-	HttpSession session;
-
 	private Logger log = LoggerFactory.getLogger(UserDetailServiceImplement.class);
 
+	// BUG CRÍTICO: la versión anterior hacía
+	// "session.setAttribute("idUsuario", usuario.getId())" AQUÍ, dentro de
+	// loadUserByUsername(). Este método solo busca al usuario por email —
+	// es DaoAuthenticationProvider quien, DESPUÉS de que este método
+	// retorna, compara la contraseña recibida contra la almacenada. Poner
+	// el efecto secundario aquí significaba que la sesión quedaba marcada
+	// como "logueada" ANTES de que la contraseña se verificara, sin
+	// importar si era correcta o no. Cualquiera que supiera el email de un
+	// usuario podía tomar su sesión con cualquier contraseña. Ahora este
+	// método solo construye y devuelve el UserDetails; la sesión se marca
+	// en UsuarioController.acceder(), que solo se ejecuta tras
+	// autenticación exitosa real.
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		// El campo del formulario se llama "username" pero contiene el email
@@ -34,14 +41,8 @@ public class UserDetailServiceImplement implements UserDetailsService {
 		Optional<Usuario> optionalUser = usuarioService.findByEmail(username);
 		if (optionalUser.isPresent()) {
 			Usuario usuario = optionalUser.get();
-			log.info("Esto es el ID del usuario: {}", usuario.getId());
-			session.setAttribute("idUsuario", usuario.getId());
+			log.info("Usuario encontrado para intento de login, id: {}", usuario.getId());
 
-			// Antes: .username(usuario.getNombre()) — usaba el nombre real de la
-			// persona como identidad interna de Spring Security. Dos usuarios con
-			// el mismo nombre habrían compartido ese identificador. Ahora se usa
-			// el email, que es el mismo campo único con el que se hizo la
-			// búsqueda arriba.
 			return User.builder().username(usuario.getEmail()).password(usuario.getPassword()).roles(usuario.getTipo())
 					.build();
 		} else {

@@ -43,7 +43,13 @@ public class SpringBootSecurity {
 				// entorno real] verifícalo en /usuario/login, /usuario/registro,
 				// /productos/create y /productos/edit antes de desplegar.
 				.csrf(csrf -> csrf.ignoringRequestMatchers("/apiproductos/**"))
-				.formLogin(login -> login.loginPage("/usuario/login").permitAll().defaultSuccessUrl("/usuario/acceder"))
+				// alwaysUse=true es obligatorio aquí: sin él, si alguien entraba a una
+				// ruta protegida sin sesión, Spring Security lo devuelve a esa ruta
+				// original después del login en vez de pasar por /usuario/acceder,
+				// y como ahí es donde ahora se marca "idUsuario" en la sesión, ese
+				// paso se saltaría por completo.
+				.formLogin(login -> login.loginPage("/usuario/login").permitAll().defaultSuccessUrl("/usuario/acceder",
+						true))
 				.logout(logout -> logout.permitAll());
 		return http.build();
 	}
